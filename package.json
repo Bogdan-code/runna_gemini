@@ -1,0 +1,21 @@
+{
+  "name": "runna-pro-coach",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "node -e \"console.log('Build complete')\""
+  },
+  "dependencies": {
+    "@netlify/database": "^2.0.1",
+    "@netlify/functions": "^6.0.2",
+    "@netlify/identity": "^2.0.0",
+    "drizzle-orm": "^1.0.0-beta.22",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^1.0.0-beta.22",
+    "typescript": "^7.0.2"
+  }
+}

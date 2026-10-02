@@ -1,0 +1,8 @@
+{
+  "name": "RUNNA Pro Coach",
+  "description": "Personalized Running Plans & Pacer with multi-week schedule, interval timer, and pace calculator.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

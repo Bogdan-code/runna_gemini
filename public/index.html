@@ -1,0 +1,700 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RUNNA Pro Coach</title>
+  <meta name="description" content="Personalized Running Plans & Pacer with multi-week schedule, interval timer, and pace calculator.">
+  <meta property="og:title" content="RUNNA Pro Coach">
+  <meta property="og:description" content="Personalized Running Plans & Pacer with multi-week schedule, interval timer, and pace calculator.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Firebase SDKs (Compat via CDN for simple serverless integration) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <!-- Atmosphere Glows -->
+  <div class="bg-glow"></div>
+  <div class="bg-glow-2"></div>
+
+  <div id="app">
+    <!-- Top Navbar -->
+    <header class="navbar">
+      <a href="#" class="brand" id="brand-home-btn">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 14l-4 4-4-4"></path>
+            <path d="M15 4v14"></path>
+            <path d="M5 20h14"></path>
+          </svg>
+        </div>
+        <div class="brand-text">RUNNA<span>.PRO</span></div>
+      </a>
+
+      <!-- Desktop Nav Links -->
+      <ul class="nav-links" id="desktop-nav-links">
+        <li>
+          <a class="nav-link active" data-nav="dashboard">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            Schedule
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" data-nav="wizard">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            Plan Generator
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" data-nav="tools">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Pacer & Timer
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" data-nav="profile">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Profile
+          </a>
+        </li>
+      </ul>
+
+      <!-- User Actions & Cloud Status -->
+      <div class="nav-actions">
+        <button id="cloud-status-badge" class="config-badge" title="Backend Sync Status">
+          ● Offline Mode
+        </button>
+        <div id="auth-header-container">
+          <!-- Populated by script: Sign In button or User Pill -->
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- ==========================================
+           VIEW 1: AUTHENTICATION (SIGN UP & LOGIN)
+           ========================================== -->
+      <section id="view-auth" class="view-section">
+        <div class="auth-wrapper">
+          <div class="auth-header">
+            <div class="brand-icon" style="margin: 0 auto 1rem; width: 44px; height: 44px; font-size: 1.4rem;">R</div>
+            <h1 id="auth-title">Welcome to Runna</h1>
+            <p id="auth-subtitle">Sign in to sync your personalized running coach & race plans</p>
+          </div>
+
+          <div id="auth-status-banner" class="auth-status-banner"></div>
+
+          <form id="auth-form" onsubmit="return false;">
+            <div class="form-group" id="group-name" style="display: none;">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="auth-name" class="form-control" placeholder="e.g. Alex Morgan">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="auth-email" class="form-control" placeholder="runner@example.com" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" id="auth-password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-block btn-lg">
+              Sign In
+            </button>
+          </form>
+
+          <div style="margin: 1.25rem 0; text-align: center; position: relative;">
+            <span style="background: var(--bg-card); padding: 0 0.75rem; color: var(--text-muted); font-size: 0.8rem; position: relative; z-index: 1;">OR</span>
+            <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: var(--border-subtle);"></div>
+          </div>
+
+          <!-- Quick Test Runner Account Button for instant demo -->
+          <button id="quick-demo-btn" class="btn btn-secondary btn-block">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+            Instant 1-Click Demo Runner
+          </button>
+
+          <div class="auth-switch">
+            <span id="auth-switch-text">Don't have an account?</span>
+            <a id="auth-toggle-mode">Sign Up</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 2: ONBOARDING / PLAN GENERATOR
+           ========================================== -->
+      <section id="view-wizard" class="view-section">
+        <div class="wizard-wrapper">
+          <div class="wizard-progress">
+            <div class="wizard-bar active" data-step="1"></div>
+            <div class="wizard-bar" data-step="2"></div>
+            <div class="wizard-bar" data-step="3"></div>
+            <div class="wizard-bar" data-step="4"></div>
+          </div>
+
+          <!-- Step 1: Distance Goal -->
+          <div class="wizard-step active" id="wizard-step-1">
+            <span class="badge badge-volt" style="margin-bottom: 0.5rem;">Step 1 of 4</span>
+            <h2>What is your primary running goal?</h2>
+            <p>Every training block is customized around your target distance and race ambition.</p>
+            
+            <div class="choice-grid" id="goal-distance-selector">
+              <div class="choice-card selected" data-value="5k">
+                <div class="choice-title">5K</div>
+                <div class="choice-subtitle">Speed & Base</div>
+              </div>
+              <div class="choice-card" data-value="10k">
+                <div class="choice-title">10K</div>
+                <div class="choice-subtitle">Endurance & Tempo</div>
+              </div>
+              <div class="choice-card" data-value="half">
+                <div class="choice-title">Half Marathon</div>
+                <div class="choice-subtitle">21.1 km Distance</div>
+              </div>
+              <div class="choice-card" data-value="marathon">
+                <div class="choice-title">Marathon</div>
+                <div class="choice-subtitle">42.2 km Distance</div>
+              </div>
+              <div class="choice-card" data-value="fitness">
+                <div class="choice-title">Get Faster</div>
+                <div class="choice-subtitle">General Fitness</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+              <label class="form-label">Goal Target Mindset</label>
+              <div class="choice-grid" id="goal-ambition-selector">
+                <div class="choice-card selected" data-value="finish">
+                  <div class="choice-title">Complete Safely</div>
+                  <div class="choice-subtitle">Injury-free finish</div>
+                </div>
+                <div class="choice-card" data-value="improve">
+                  <div class="choice-title">Set a New PR</div>
+                  <div class="choice-subtitle">Beat previous record</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Current Fitness Level & Paces -->
+          <div class="wizard-step" id="wizard-step-2">
+            <span class="badge badge-volt" style="margin-bottom: 0.5rem;">Step 2 of 4</span>
+            <h2>What is your current running baseline?</h2>
+            <p>This allows Runna to compute your precise training zones (Interval, Tempo, Easy, Long Run).</p>
+
+            <div class="form-group">
+              <label class="form-label">Measurement Unit</label>
+              <div class="choice-grid" id="unit-selector">
+                <div class="choice-card selected" data-value="km">
+                  <div class="choice-title">Kilometers (km, min/km)</div>
+                </div>
+                <div class="choice-card" data-value="mi">
+                  <div class="choice-title">Miles (mi, min/mi)</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Current 5K Race Time (or estimated all-out effort)</label>
+              <div class="input-row">
+                <div>
+                  <label style="font-size: 0.75rem; color: var(--text-muted);">Minutes</label>
+                  <input type="number" id="base-5k-min" class="form-control" value="26" min="12" max="60">
+                </div>
+                <div>
+                  <label style="font-size: 0.75rem; color: var(--text-muted);">Seconds</label>
+                  <input type="number" id="base-5k-sec" class="form-control" value="30" min="0" max="59">
+                </div>
+              </div>
+              <small style="color: var(--text-muted); display: block; margin-top: 0.35rem;">
+                Estimated baseline pace: <span id="calculated-baseline-display" style="color: var(--accent-volt); font-weight: 700;">5:18 min/km</span>
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Current Weekly Running Experience</label>
+              <div class="choice-grid" id="experience-selector">
+                <div class="choice-card" data-value="beginner">
+                  <div class="choice-title">Beginner</div>
+                  <div class="choice-subtitle">&lt; 15 km/wk (0-10 mi)</div>
+                </div>
+                <div class="choice-card selected" data-value="intermediate">
+                  <div class="choice-title">Intermediate</div>
+                  <div class="choice-subtitle">15 - 35 km/wk (10-22 mi)</div>
+                </div>
+                <div class="choice-card" data-value="advanced">
+                  <div class="choice-title">Advanced</div>
+                  <div class="choice-subtitle">35+ km/wk (22+ mi)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Schedule & Weekly Frequency -->
+          <div class="wizard-step" id="wizard-step-3">
+            <span class="badge badge-volt" style="margin-bottom: 0.5rem;">Step 3 of 4</span>
+            <h2>Select your weekly running routine</h2>
+            <p>Choose how many days you want to run. Runna balances hard workouts and rest/strength recovery.</p>
+
+            <div class="form-group">
+              <label class="form-label">Running Days Per Week</label>
+              <div class="choice-grid" id="frequency-selector">
+                <div class="choice-card" data-value="3">
+                  <div class="choice-title">3 Days</div>
+                  <div class="choice-subtitle">Optimal for busy schedules</div>
+                </div>
+                <div class="choice-card selected" data-value="4">
+                  <div class="choice-title">4 Days</div>
+                  <div class="choice-subtitle">Most popular & balanced</div>
+                </div>
+                <div class="choice-card" data-value="5">
+                  <div class="choice-title">5 Days</div>
+                  <div class="choice-subtitle">For maximum performance</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Preferred Running Days (Select exactly <span id="required-days-count">4</span>)</label>
+              <div class="days-picker" id="days-picker-container">
+                <div class="day-chip" data-day="Mon">Mon</div>
+                <div class="day-chip selected" data-day="Tue">Tue</div>
+                <div class="day-chip" data-day="Wed">Wed</div>
+                <div class="day-chip selected" data-day="Thu">Thu</div>
+                <div class="day-chip" data-day="Fri">Fri</div>
+                <div class="day-chip selected" data-day="Sat">Sat</div>
+                <div class="day-chip selected" data-day="Sun">Sun</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Plan Length & Target Date -->
+          <div class="wizard-step" id="wizard-step-4">
+            <span class="badge badge-volt" style="margin-bottom: 0.5rem;">Step 4 of 4</span>
+            <h2>Plan duration & race timeline</h2>
+            <p>Runna structures your training into progressive phases: Base, Build, Peak, and Taper.</p>
+
+            <div class="form-group">
+              <label class="form-label">Training Block Length</label>
+              <div class="choice-grid" id="duration-selector">
+                <div class="choice-card" data-value="8">
+                  <div class="choice-title">8 Weeks</div>
+                  <div class="choice-subtitle">Express block</div>
+                </div>
+                <div class="choice-card selected" data-value="12">
+                  <div class="choice-title">12 Weeks</div>
+                  <div class="choice-subtitle">Recommended standard</div>
+                </div>
+                <div class="choice-card" data-value="16">
+                  <div class="choice-title">16 Weeks</div>
+                  <div class="choice-subtitle">Comprehensive build</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Race / Target Completion Date (Optional)</label>
+              <input type="date" id="wizard-target-date" class="form-control">
+            </div>
+
+            <div style="background: rgba(200, 255, 0, 0.05); border: 1px solid var(--border-focus); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem;">
+              <h4 style="color: var(--accent-volt); font-size: 0.95rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Runna Algorithmic Guarantee
+              </h4>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45;">
+                Every workout will have tailored paces based on your current baseline, progressive weekly mileage ramping, speed interval sets, and scheduled recovery weeks to prevent injury.
+              </p>
+            </div>
+          </div>
+
+          <!-- Wizard Footer Actions -->
+          <div class="wizard-footer">
+            <button id="wizard-prev-btn" class="btn btn-secondary" style="display: none;">
+              Back
+            </button>
+            <div style="flex: 1;"></div>
+            <button id="wizard-next-btn" class="btn btn-primary">
+              Continue
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 3: DYNAMIC TRAINING SCHEDULE DASHBOARD
+           ========================================== -->
+      <section id="view-dashboard" class="view-section active">
+        
+        <!-- Active Plan Banner & Summary Stats -->
+        <div class="hero-stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Active Plan</span>
+            <span class="stat-value" id="stat-plan-name">10K Master</span>
+            <span class="stat-sub" id="stat-plan-desc">12 Weeks • 4 Days / Wk</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Current Week Target</span>
+            <span class="stat-value" id="stat-week-mileage">28.5 <span style="font-size: 1rem; color: var(--text-muted);">km</span></span>
+            <span class="stat-sub" id="stat-week-phase">Build Phase (Week 4 of 12)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Workouts Completed</span>
+            <span class="stat-value" id="stat-completed-rate">6 / 48</span>
+            <span class="stat-sub" id="stat-streak">🔥 12% Plan Complete</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Race Pace Benchmark</span>
+            <span class="stat-value" id="stat-race-pace">5:15 <span style="font-size: 1rem; color: var(--text-muted);">/km</span></span>
+            <span class="stat-sub" id="stat-pred-time">Estimated 10K: 52:30</span>
+          </div>
+        </div>
+
+        <!-- Schedule Week Navigation Bar -->
+        <div class="plan-header">
+          <div class="plan-title-area">
+            <h2 id="current-week-heading">Week 4 Training Schedule</h2>
+            <p id="current-week-subtitle">Aerobic build with threshold repetitions and weekend long run</p>
+          </div>
+
+          <div class="week-selector-bar">
+            <button id="prev-week-btn" class="btn btn-secondary btn-sm" title="Previous Week">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <div class="week-pill-nav" id="week-pills-container">
+              <!-- Dynamically populated week buttons (W1, W2, W3...) -->
+            </div>
+            <button id="next-week-btn" class="btn btn-secondary btn-sm" title="Next Week">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Weekly Days Grid -->
+        <div class="week-schedule-grid" id="schedule-cards-grid">
+          <!-- Dynamically populated workout day cards -->
+        </div>
+
+        <!-- Recovery / Strength & Nutrition Guidance Banner -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 1.5rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.25rem;">Need to adjust your training schedule?</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem;">Regenerate your plan at any time based on updated fitness, injuries, or race date shifts.</p>
+          </div>
+          <button id="dash-replan-btn" class="btn btn-outline-volt">
+            Customize & Regenerate Plan
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ==========================================
+           VIEW 4: PACER & WORKOUT TIMER TOOLS
+           ========================================== -->
+      <section id="view-tools" class="view-section">
+        <div class="tools-grid">
+          
+          <!-- Column 1: Live Interactive Stopwatch & Interval Timer -->
+          <div class="tool-card">
+            <div class="tool-card-header">
+              <div class="badge badge-volt" style="margin-bottom: 0.5rem;">Live Audio Timer</div>
+              <h3>Interactive Workout Pacer</h3>
+              <p>Execute structured sets with audio cues for warm-ups, hard intervals, and recovery walks.</p>
+            </div>
+
+            <!-- Big Digital Display -->
+            <div class="timer-display-box" id="live-timer-box">
+              <div class="timer-current-mode" id="timer-step-tag">READY TO RUN</div>
+              <div class="timer-time-digits" id="timer-digits">00:00<span class="timer-sub-digits" id="timer-ms">.0</span></div>
+              <div class="timer-stage-title" id="timer-step-title">Select a workout or start a quick timer</div>
+              <div class="timer-target-pace" id="timer-step-pace">Target: —</div>
+            </div>
+
+            <div class="timer-controls">
+              <button id="timer-start-pause-btn" class="btn btn-primary btn-lg" style="flex: 2;">
+                <svg id="timer-play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <span id="timer-btn-label">Start Workout</span>
+              </button>
+              <button id="timer-skip-btn" class="btn btn-secondary btn-lg" title="Skip to next step" style="flex: 1;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                Next
+              </button>
+              <button id="timer-reset-btn" class="btn btn-secondary btn-lg" title="Reset Timer">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+              </button>
+            </div>
+
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 0.85rem; color: var(--text-secondary);">Audio Beeps & Voice Tone:</span>
+              <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem; color: var(--accent-volt); font-weight: 700;">
+                <input type="checkbox" id="timer-audio-toggle" checked style="accent-color: var(--accent-volt);">
+                Sound Enabled
+              </label>
+            </div>
+          </div>
+
+          <!-- Column 2: Race Time & Training Pace Calculator -->
+          <div class="tool-card">
+            <div class="tool-card-header">
+              <div class="badge badge-tempo" style="margin-bottom: 0.5rem;">Pace Calculator</div>
+              <h3>Target Race & Training Paces</h3>
+              <p>Predict finish times, compute required splits, and view your 5 custom training zones.</p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Distance</label>
+              <select id="calc-distance-select" class="form-control">
+                <option value="5">5K (5.00 km)</option>
+                <option value="10" selected>10K (10.00 km)</option>
+                <option value="21.0975">Half Marathon (21.10 km)</option>
+                <option value="42.195">Marathon (42.20 km)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Target Finish Time (Hours : Minutes : Seconds)</label>
+              <div class="input-row-3">
+                <input type="number" id="calc-time-h" class="form-control" placeholder="Hrs" value="0" min="0" max="23">
+                <input type="number" id="calc-time-m" class="form-control" placeholder="Min" value="49" min="0" max="59">
+                <input type="number" id="calc-time-s" class="form-control" placeholder="Sec" value="30" min="0" max="59">
+              </div>
+            </div>
+
+            <div style="background: var(--bg-tertiary); border-radius: var(--radius-md); padding: 1.1rem; margin-bottom: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Required Pace:</span>
+                <span id="calc-pace-display" style="font-family: var(--font-mono); font-size: 1.35rem; font-weight: 800; color: var(--accent-volt);">4:57 /km</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Imperial & Speed:</span>
+                <span id="calc-imperial-display" style="font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">7:58 /mi (12.1 km/h)</span>
+              </div>
+            </div>
+
+            <!-- Training Pace Zones Table -->
+            <h4 style="font-size: 0.9rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.5rem;">
+              Your Personalized Training Zones
+            </h4>
+            <table class="zones-table">
+              <thead>
+                <tr>
+                  <th>Zone</th>
+                  <th>Effort</th>
+                  <th style="text-align: right;">Target Pace</th>
+                </tr>
+              </thead>
+              <tbody id="zones-table-body">
+                <!-- Dynamically populated zones -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 5: USER PROFILE & SETTINGS
+           ========================================== -->
+      <section id="view-profile" class="view-section">
+        <div class="profile-grid">
+          
+          <!-- Profile Card -->
+          <div class="profile-card">
+            <div class="profile-avatar-large" id="profile-avatar-letter">R</div>
+            <div class="profile-info">
+              <h3 id="profile-name-display">Alex Morgan</h3>
+              <p id="profile-email-display">runner@example.com</p>
+              <div style="margin-top: 0.75rem;">
+                <span id="profile-status-badge" class="badge badge-completed">Runna Athlete</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle);">
+              <button id="profile-logout-btn" class="btn btn-secondary btn-block">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+          <!-- Training Plan Details & Backend Config -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            <div class="profile-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+                <div>
+                  <h3 style="font-size: 1.25rem; font-weight: 800;">My Training Configuration</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.85rem;">Saved baseline metrics & units</p>
+                </div>
+                <button id="profile-edit-plan-btn" class="btn btn-secondary btn-sm">Edit Plan</button>
+              </div>
+
+              <div class="input-row" style="margin-bottom: 1rem;">
+                <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-md);">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Goal Race</div>
+                  <div style="font-weight: 800; font-size: 1.1rem; margin-top: 0.25rem;" id="prof-goal-val">10K Run</div>
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-md);">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Baseline 5K Time</div>
+                  <div style="font-weight: 800; font-size: 1.1rem; margin-top: 0.25rem;" id="prof-5k-val">26:30</div>
+                </div>
+              </div>
+
+              <div class="input-row">
+                <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-md);">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Weekly Frequency</div>
+                  <div style="font-weight: 800; font-size: 1.1rem; margin-top: 0.25rem;" id="prof-freq-val">4 Days / Week</div>
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-md);">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Unit Preference</div>
+                  <div style="font-weight: 800; font-size: 1.1rem; margin-top: 0.25rem;" id="prof-unit-val">Metric (km)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Firebase Cloud Sync Settings Card -->
+            <div class="profile-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div>
+                  <h3 style="font-size: 1.25rem; font-weight: 800;">Cloud Database & Auth Sync</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.85rem;">Connect Firebase Auth & Firestore for cross-device cloud persistence</p>
+                </div>
+                <button id="open-firebase-modal-btn" class="btn btn-outline-volt btn-sm">Firebase Settings</button>
+              </div>
+
+              <div style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5;">
+                <p>Status: <strong id="firebase-connection-text" style="color: var(--accent-volt);">Active (LocalStorage & Demo Engine)</strong></p>
+                <p style="margin-top: 0.35rem; font-size: 0.82rem; color: var(--text-muted);">
+                  The app automatically runs locally without any setup. To connect your own live Firebase project on Netlify, paste your free Firebase config keys in the settings modal.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-item active" data-nav="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <span>Schedule</span>
+      </div>
+      <div class="bottom-nav-item" data-nav="wizard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        <span>Plan</span>
+      </div>
+      <div class="bottom-nav-item" data-nav="tools">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <span>Pacer</span>
+      </div>
+      <div class="bottom-nav-item" data-nav="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span>Profile</span>
+      </div>
+    </nav>
+
+    <!-- ==========================================
+         MODAL 1: WORKOUT DETAIL EXPANSION
+         ========================================== -->
+    <div class="modal-overlay" id="workout-modal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <div>
+            <span class="badge badge-volt" id="modal-workout-badge">INTERVALS</span>
+            <h2 id="modal-workout-title" style="font-size: 1.45rem; font-weight: 800; margin-top: 0.35rem;">8 x 400m VO2 Max Repeats</h2>
+            <div style="display: flex; gap: 1rem; margin-top: 0.3rem; font-size: 0.88rem; color: var(--text-secondary);">
+              <span id="modal-workout-distance">7.2 km</span> • <span id="modal-workout-duration">~45 min</span>
+            </div>
+          </div>
+          <button class="modal-close-btn" id="modal-close-btn" title="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.5;" id="modal-workout-desc">
+          Build top-end speed and aerobic capacity with high-cadence 400m repeats and recovery jogs.
+        </div>
+
+        <div class="workout-steps" id="modal-workout-steps">
+          <!-- Populated dynamically with warmup, sets, cooldown -->
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+          <button id="modal-start-timer-btn" class="btn btn-primary btn-block">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Launch in Pacer Timer
+          </button>
+          <button id="modal-toggle-complete-btn" class="btn btn-secondary">
+            Mark Completed
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         MODAL 2: FIREBASE SETTINGS CONFIG
+         ========================================== -->
+    <div class="modal-overlay" id="firebase-modal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <div>
+            <h2 style="font-size: 1.4rem; font-weight: 800;">Firebase Cloud Configuration</h2>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Optional: Connect your own Firebase project for live real-time cloud sync</p>
+          </div>
+          <button class="modal-close-btn" id="firebase-modal-close" title="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Firebase Config JSON Object</label>
+          <textarea id="firebase-config-input" class="form-control" rows="8" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "your-app.firebaseapp.com",
+  "projectId": "your-app",
+  "storageBucket": "your-app.appspot.com",
+  "messagingSenderId": "...",
+  "appId": "..."
+}' style="font-family: var(--font-mono); font-size: 0.82rem;"></textarea>
+          <small style="color: var(--text-muted); display: block; margin-top: 0.4rem;">
+            From Firebase Console → Project Settings → General → "Your apps" (Web)
+          </small>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+          <button id="firebase-save-btn" class="btn btn-primary" style="flex: 1;">Save & Initialize</button>
+          <button id="firebase-reset-demo-btn" class="btn btn-secondary">Use Offline Storage Mode</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+  </div>
+
+  <!-- Main JavaScript App Logic -->
+  <script src="script.js"></script>
+</body>
+</html>
+```
